@@ -2,12 +2,11 @@ services:
   # ── Spring Boot Backend ──────────────────────────────────────────────────
   - type: web
     name: glucotwin-backend
-    env: java
+    env: docker
     region: oregon
     plan: free
     rootDir: glucotwin-backend
-    buildCommand: mvn clean package -DskipTests
-    startCommand: java -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -jar target/glucotwin-backend-1.0.0.jar
+    dockerfilePath: ./Dockerfile
     healthCheckPath: /api/health/ping
     envVars:
       - key: DB_URL
@@ -19,10 +18,7 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: ML_SERVICE_URL
-        fromService:
-          name: glucotwin-ml
-          type: web
-          property: url
+        sync: false
       - key: CORS_ORIGINS
         sync: false
       - key: ANTHROPIC_API_KEY
@@ -45,8 +41,6 @@ services:
     region: oregon
     plan: free
     rootDir: glucotwin-ml
-    # Model .pkl files are committed to the repo — no training needed at build time.
-    # If you ever need to retrain, run: python train.py locally, then commit the new pkl files.
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn --workers=2 --bind=0.0.0.0:$PORT --timeout=120 ml_service:app
     healthCheckPath: /health
