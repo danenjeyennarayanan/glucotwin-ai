@@ -1,39 +1,4 @@
 services:
-  # ── Spring Boot Backend ──────────────────────────────────────────────────
-  - type: web
-    name: glucotwin-backend
-    env: docker
-    region: oregon
-    plan: free
-    rootDir: glucotwin-backend
-    dockerfilePath: ./Dockerfile
-    healthCheckPath: /api/health/ping
-    envVars:
-      - key: DB_URL
-        sync: false
-      - key: DB_USERNAME
-        sync: false
-      - key: DB_PASSWORD
-        sync: false
-      - key: JWT_SECRET
-        generateValue: true
-      - key: ML_SERVICE_URL
-        sync: false
-      - key: CORS_ORIGINS
-        sync: false
-      - key: ANTHROPIC_API_KEY
-        sync: false
-      - key: EMAIL_ENABLED
-        value: "false"
-      - key: MAIL_HOST
-        sync: false
-      - key: MAIL_PORT
-        value: "587"
-      - key: MAIL_USERNAME
-        sync: false
-      - key: MAIL_PASSWORD
-        sync: false
-
   # ── Flask ML Service ─────────────────────────────────────────────────────
   - type: web
     name: glucotwin-ml
@@ -52,4 +17,4 @@ services:
       - key: DEBUG
         value: "false"
       - key: CORS_ORIGINS
-        sync: false
+        value: "*"
