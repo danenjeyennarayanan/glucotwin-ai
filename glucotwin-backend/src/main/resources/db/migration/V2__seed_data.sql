@@ -23,4 +23,4 @@ VALUES ('Low', 'Maintain your current healthy lifestyle — you are doing great!
 INSERT INTO users (name, email, password, role)
 VALUES ('GlucoTwin Admin', 'admin@glucotwin.ai',
         '$2a$10$OXDBk67TaneIRqJVZElOGu0SDpWKquaPSC9Cws2YLlOcfQlK1vHhi', 'ADMIN')
-ON DUPLICATE KEY UPDATE id = id;
+ON CONFLICT (email) DO NOTHING;
