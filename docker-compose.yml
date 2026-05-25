@@ -1,0 +1,107 @@
+version: "3.9"
+
+services:
+  # ── MySQL Database ─────────────────────────────────────────────────────
+  db:
+    image: mysql:8.2
+    container_name: glucotwin-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: glucotwin_db
+      MYSQL_USER: ${DB_USERNAME:-glucotwin}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-glucotwinpass}
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root",
+             "-p${DB_ROOT_PASSWORD:-rootpassword}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ── Flask ML Service ───────────────────────────────────────────────────
+  ml-service:
+    build:
+      context: ./glucotwin-ml
+    container_name: glucotwin-ml
+    restart: unless-stopped
+    environment:
+      PORT: 5001
+      DEBUG: "false"
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      MODEL_PATH: model/diabetes_model.pkl
+      EXPLAINER_PATH: model/shap_explainer.pkl
+    ports:
+      - "5001:5001"
+    # Bind-mount the committed .pkl files — do NOT use a named volume here
+    # (named volumes start empty, losing the pre-trained model on first run).
+    volumes:
+      - ./glucotwin-ml/model:/app/model
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:5001/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # ── Spring Boot Backend ────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./glucotwin-backend
+    container_name: glucotwin-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      ml-service:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:mysql://db:3306/glucotwin_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      DB_USERNAME: ${DB_USERNAME:-glucotwin}
+      DB_PASSWORD: ${DB_PASSWORD:-glucotwinpass}
+      JWT_SECRET: ${JWT_SECRET:-ChangeThisToAtLeast32CharSecretInProduction!!}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+      ML_SERVICE_URL: http://ml-service:5001
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      PORT: 8080
+      # Set ANTHROPIC_API_KEY in a .env file for the AI chatbot.
+      # If not set, chatbot uses built-in fallback responses (demo-safe).
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/api/health/ping || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ── React Frontend ────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./glucotwin-frontend
+      args:
+        # Override with your deployed backend URL when running in production:
+        #   REACT_APP_API_BASE=https://your-backend.onrender.com docker-compose up
+        REACT_APP_API_BASE: ${REACT_APP_API_BASE:-http://localhost:8080}
+    container_name: glucotwin-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "80:80"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  db_data:
+  # ml_models volume removed — using bind mount instead so pre-trained pkl files are used

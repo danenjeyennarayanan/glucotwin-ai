@@ -1,0 +1,61 @@
+services:
+  # ── Spring Boot Backend ──────────────────────────────────────────────────
+  - type: web
+    name: glucotwin-backend
+    env: java
+    region: oregon
+    plan: free
+    rootDir: glucotwin-backend
+    buildCommand: mvn clean package -DskipTests
+    startCommand: java -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -jar target/glucotwin-backend-1.0.0.jar
+    healthCheckPath: /api/health/ping
+    envVars:
+      - key: DB_URL
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ML_SERVICE_URL
+        fromService:
+          name: glucotwin-ml
+          type: web
+          property: url
+      - key: CORS_ORIGINS
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: EMAIL_ENABLED
+        value: "false"
+      - key: MAIL_HOST
+        sync: false
+      - key: MAIL_PORT
+        value: "587"
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+
+  # ── Flask ML Service ─────────────────────────────────────────────────────
+  - type: web
+    name: glucotwin-ml
+    env: python
+    region: oregon
+    plan: free
+    rootDir: glucotwin-ml
+    # Model .pkl files are committed to the repo — no training needed at build time.
+    # If you ever need to retrain, run: python train.py locally, then commit the new pkl files.
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --workers=2 --bind=0.0.0.0:$PORT --timeout=120 ml_service:app
+    healthCheckPath: /health
+    envVars:
+      - key: MODEL_PATH
+        value: model/diabetes_model.pkl
+      - key: EXPLAINER_PATH
+        value: model/shap_explainer.pkl
+      - key: DEBUG
+        value: "false"
+      - key: CORS_ORIGINS
+        sync: false

@@ -1,0 +1,15 @@
+{
+  "short_name": "GlucoTwin",
+  "name": "GlucoTwin AI — Diabetes Risk Prediction",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "16x16 32x32",
+      "type": "image/x-icon"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#050d1a",
+  "background_color": "#050d1a"
+}

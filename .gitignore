@@ -1,0 +1,58 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+build/
+dist/
+target/
+
+# Environment files (NEVER commit these)
+.env
+.env.local
+.env.production
+glucotwin-backend/.env
+glucotwin-ml/.env
+
+# Java
+*.class
+*.jar
+*.war
+*.ear
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+.venv/
+
+# ML model artifacts are committed to the repo so Render/Docker can use them
+# without needing to retrain from scratch on every deploy.
+# If the files grow too large, migrate to Git LFS:  git lfs track "*.pkl"
+# glucotwin-ml/model/*.pkl   ← intentionally NOT ignored
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+.dockerignore
+
+# Local env files — never commit
+**/.env.local
+**/.env.production
+glucotwin-frontend/.env.local
+glucotwin-frontend/.env.production
+
+# Dataset CSV — kept in repo so Render build can run train.py
+# glucotwin-ml/diabetes_prediction_dataset.csv
